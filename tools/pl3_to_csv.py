@@ -7,6 +7,9 @@ from pathlib import Path
 
 SIGNATURE = b"TP3 - Event File"
 TIME_HEADER = "Time (msec)"
+PL3_CHANNEL_COUNT_OFFSET = 0x4C
+PL3_SAMPLE_COUNT_MINUS_ONE_OFFSET = 0x58
+MAX_REASONABLE_SAMPLES = 10_000_000
 
 
 def _parse_pl3_metadata(pl3_path: Path) -> tuple[int | None, int | None]:
@@ -17,9 +20,12 @@ def _parse_pl3_metadata(pl3_path: Path) -> tuple[int | None, int | None]:
     channel_count = None
     sample_count = None
     if len(data) >= 0x60:
-        channel_count = struct.unpack_from("<I", data, 0x4C)[0]
-        sample_count_minus_one = struct.unpack_from("<I", data, 0x58)[0]
-        if 0 < sample_count_minus_one < 10_000_000:
+        # These offsets are part of the PL3 binary header for this TP3 event format.
+        channel_count = struct.unpack_from("<I", data, PL3_CHANNEL_COUNT_OFFSET)[0]
+        sample_count_minus_one = struct.unpack_from(
+            "<I", data, PL3_SAMPLE_COUNT_MINUS_ONE_OFFSET
+        )[0]
+        if 0 < sample_count_minus_one < MAX_REASONABLE_SAMPLES:
             sample_count = sample_count_minus_one + 1
 
     return channel_count, sample_count
@@ -32,7 +38,7 @@ def _load_data_only_rows(reference_csv: Path) -> tuple[list[str], list[list[str]
     try:
         header_index = next(i for i, row in enumerate(rows) if row and row[0] == TIME_HEADER)
     except StopIteration as exc:
-        raise ValueError(f"Could not find '{TIME_HEADER}' header in {reference_csv}") from exc
+        raise ValueError(f'Could not find header "{TIME_HEADER}" in {reference_csv}') from exc
 
     raw_header = rows[header_index]
     while raw_header and raw_header[-1] == "":
@@ -83,7 +89,7 @@ def main() -> int:
 
     try:
         header, data_rows = convert_pl3_to_csv_rows(pl3_file, reference_csv)
-    except Exception as exc:
+    except (OSError, ValueError, csv.Error, struct.error) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
 
