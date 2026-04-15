@@ -42,7 +42,7 @@ def _load_data_only_rows(reference_csv: Path) -> tuple[list[str], list[list[str]
 
     raw_header = rows[header_index]
     last_non_empty_index = next(
-        (i for i in range(len(raw_header) - 1, -1, -1) if raw_header[i] != ""),
+        (i for i in range(len(raw_header) - 1, -1, -1) if raw_header[i]),
         -1,
     )
     header = raw_header[: last_non_empty_index + 1]
@@ -61,7 +61,7 @@ def convert_pl3_to_csv_rows(pl3_path: Path, reference_csv: Path) -> tuple[list[s
 
     if channel_count is not None and len(header) != channel_count + 1:
         raise ValueError(
-            f"Channel count mismatch: PL3 reports {channel_count}, CSV header has {len(header) - 1}"
+            f"Channel count mismatch: PL3 reports {channel_count} channels, CSV header has {len(header)} columns ({len(header) - 1} channels plus time)"
         )
 
     if expected_samples is not None and expected_samples != len(data_rows):
