@@ -41,10 +41,11 @@ def _load_data_only_rows(reference_csv: Path) -> tuple[list[str], list[list[str]
         raise ValueError(f'Could not find header "{TIME_HEADER}" in {reference_csv}') from exc
 
     raw_header = rows[header_index]
-    while raw_header and raw_header[-1] == "":
-        raw_header.pop()
-
-    header = raw_header
+    last_non_empty_index = next(
+        (i for i in range(len(raw_header) - 1, -1, -1) if raw_header[i] != ""),
+        -1,
+    )
+    header = raw_header[: last_non_empty_index + 1]
     data_rows = []
     for row in rows[header_index + 1 :]:
         if not row or row[0] == "":

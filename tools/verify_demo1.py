@@ -16,7 +16,12 @@ def load_expected_data_only() -> list[list[str]]:
     with CSV_FILE.open("r", encoding="utf-8-sig", newline="") as handle:
         rows = list(csv.reader(handle))
 
-    header_index = next(i for i, row in enumerate(rows) if row and row[0] == "Time (msec)")
+    header_index = next(
+        (i for i, row in enumerate(rows) if row and row[0] == "Time (msec)"),
+        None,
+    )
+    if header_index is None:
+        raise ValueError(f'Could not find header "Time (msec)" in {CSV_FILE}')
     header = [c for c in rows[header_index] if c]
     data_rows = [row[: len(header)] for row in rows[header_index + 1 :] if row and row[0]]
     return [header] + data_rows
